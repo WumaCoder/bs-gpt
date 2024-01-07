@@ -13,6 +13,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { ComposerProps } from "@chatui/core/lib/components/Composer";
 import TableView from "@/components/TableView";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 
 const bsSdk = new BsSdk({ onSelectionChange: true });
 const bsSql = new BsSql(bsSdk);
@@ -43,6 +44,12 @@ export default function Home() {
       // isNew: true,
       // isHighlight: true,
     },
+    {
+      name: "获取表结构",
+      code: "table",
+      // isNew: true,
+      // isHighlight: true,
+    },
   ]);
   const { messages, appendMsg, setTyping, updateMsg, deleteMsg, resetList } =
     useMessages([]);
@@ -70,7 +77,7 @@ export default function Home() {
   const botSend = (type: string, val: any) => sendFn(type, val, "left");
   const userSend = (type: string, val: any) => sendFn(type, val, "right");
 
-  function handleSend(type: string, val: string) {
+  async function handleSend(type: string, val: string) {
     console.log(type, val);
 
     if (type === "text" && val.trim()) {
@@ -97,6 +104,8 @@ export default function Home() {
             botSend("select", content);
           });
           break;
+        case "table":
+          break;
         case "help":
           botSend(
             "text",
@@ -117,6 +126,58 @@ export default function Home() {
           ]);
           break;
         default:
+          const table = await bsSql.structure(await bsSdk.getActiveTable());
+
+          fetch("/api/ai", {
+            method: "POST", // 指定请求方法为 POST
+            headers: {
+              "Content-Type": "application/json", // 设置请求头
+            },
+            body: JSON.stringify({
+              token: "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",
+              message: val,
+              tables: [table],
+              responseType: "stream",
+            }), // 将 JavaScript 对象转换为 JSON 字符串
+          })
+            .then((response) => {
+              const reader = response.body!.getReader();
+              const decoder = new TextDecoder();
+              let text = "";
+              const id = botSend("text", "");
+              // 逐步读取数据
+              return reader
+                .read()
+                .then(function processText({ done, value }): any {
+                  if (done) {
+                    console.log("Stream complete");
+                    const sqls = extractSqlBlocks(text);
+                    console.log(sqls);
+                    select(sqls[0]).then(async (content) => {
+                      updateMsg(id, {
+                        type: "select",
+                        content,
+                      });
+                    });
+
+                    return;
+                  }
+
+                  // 将 Uint8Array 转换为字符串
+                  const chunk = decoder.decode(value, { stream: true });
+                  console.log(chunk);
+                  text += chunk;
+                  updateMsg(id, {
+                    type: "text",
+                    content: text,
+                  });
+                  // 读取下一个数据块
+                  return reader.read().then(processText);
+                });
+            })
+            .catch((err) => {
+              console.error("Fetch error:", err);
+            });
           break;
       }
 
@@ -168,6 +229,15 @@ export default function Home() {
         <Bubble type="text" style={{ width: "100%", overflow: "hidden" }}>
           <TableView content={content} bsSdk={bsSdk}></TableView>
         </Bubble>
+      );
+    }
+
+    if (type === "includesql") {
+      return (
+        <Bubble
+          type="text"
+          style={{ width: "100%", overflow: "hidden" }}
+        ></Bubble>
       );
     }
 
@@ -290,4 +360,22 @@ function parseStringCmd(str: string) {
     args.push(temp);
   }
   return args;
+}
+
+function extractSqlBlocks(text: string) {
+  // 正则表达式匹配被 ``` 包围的 SQL 代码块
+  const sqlBlockRegex = /```sql\s+([\s\S]*?)```/g;
+
+  // 使用正则表达式匹配文本
+  const matches = [];
+  let match;
+  while ((match = sqlBlockRegex.exec(text)) !== null) {
+    matches.push(match[1].trim()); // 添加匹配的 SQL 代码块，去除首尾空白
+  }
+
+  if (matches.length === 0 && text.toLocaleLowerCase().includes("select")) {
+    matches.push(text);
+  }
+
+  return matches;
 }

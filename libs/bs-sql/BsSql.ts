@@ -1,4 +1,4 @@
-import { ITable } from "@lark-base-open/js-sdk";
+import { FieldType, IFieldMeta, ITable } from "@lark-base-open/js-sdk";
 import { BsSdk } from "../bs-sdk/BsSdk";
 import { Emitter } from "../bs-sdk/Emitter";
 import alasql from "alasql";
@@ -120,4 +120,24 @@ export class BsSql {
 
     return alasql(sql);
   }
+  async structure(table: ITable) {
+    const fields = await table.getFieldMetaList();
+    console.log(fields);
+    let sql = `CREATE TABLE \`${await table.getName()}\`(\n${fields
+      .map((item) => {
+        return `   \`${item.id}\` ${typeTrans(item.type)} COMMENT '${
+          item.name
+        }'`;
+      })
+      .join(",\n")}\n);`;
+    console.log(sql);
+    return sql;
+  }
+}
+
+function typeTrans(type: FieldType) {
+  if (type === FieldType.Number) {
+    return "int";
+  }
+  return "text";
 }
