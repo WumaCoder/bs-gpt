@@ -214,7 +214,7 @@ export default function Home() {
 
   return (
     <Chat
-      navbar={{ title: "GPT 查询" }}
+      navbar={{ title: "AI 助手" }}
       messages={messages}
       renderMessageContent={renderMessageContent}
       onSend={handleSend}
