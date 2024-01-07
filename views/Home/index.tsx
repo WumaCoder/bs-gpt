@@ -185,9 +185,9 @@ export default function Home() {
       if (e.key === "ArrowUp") {
         if (historyIndex.current <= history.current.length) {
           composerRef.current.setText(history.current[historyIndex.current]);
+          const len = history.current[historyIndex.current].length;
           setTimeout(() => {
             // 光标移动到最后
-            const len = history.current[historyIndex.current].length;
             target.setSelectionRange(len, len);
           });
           historyIndex.current--;
