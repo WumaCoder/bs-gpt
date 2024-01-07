@@ -35,6 +35,9 @@ dependencies:
   react-dom:
     specifier: 18.2.0
     version: 18.2.0(react@18.2.0)
+  react-hotkeys-hook:
+    specifier: ^4.4.3
+    version: 4.4.3(react-dom@18.2.0)(react@18.2.0)
   reset-css:
     specifier: ^5.0.2
     version: 5.0.2
@@ -3835,6 +3838,16 @@ packages:
     dependencies:
       clsx: 1.2.1
       prop-types: 15.8.1
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    dev: false
+
+  /react-hotkeys-hook@4.4.3(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-G6psp7OUm9xxY4G2vL48tBwWUVJLvD/PeInaPdPvqRJ8GoXBu6Djqr6WIw5gu1M0SbR1epNUlvpccxu2ZzmtFQ==, tarball: https://registry.npmjs.org/react-hotkeys-hook/-/react-hotkeys-hook-4.4.3.tgz}
+    peerDependencies:
+      react: '>=16.8.1'
+      react-dom: '>=16.8.1'
+    dependencies:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
     dev: false
