@@ -15,6 +15,7 @@ export type TableListCtx = {
 export class BsSql {
   public emFetchTableList = new Emitter<(data: TableListCtx) => any>();
   public emFetchTableListFields = new Emitter<(data: any) => any>();
+  public emSelectTables = new Emitter<(data: any) => any>();
 
   constructor(private sdk: BsSdk) {
     this.fetchTables();
@@ -92,7 +93,7 @@ export class BsSql {
       }
     >();
     const tables = (alasql as any).tables;
-    await Promise.all(
+    const selectTables = await Promise.all(
       selectTablesId.map(async (id) => {
         const table = tableListCtx.tableMap.get(id) as ITable;
         const records = await this.sdk.getRecordList(table);
@@ -106,10 +107,12 @@ export class BsSql {
 
         console.log("selectTables:", table, records, data);
         tables[id] = { data };
+        return table;
       })
     );
 
     this.emFetchTableListFields.emitLifeCycle(tableMapFields);
+    this.emSelectTables.emitLifeCycle(selectTables);
 
     sql = replaceFieldNames(sql, transFields, {}, ["_id"]) + "";
 

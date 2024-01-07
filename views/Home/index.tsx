@@ -11,8 +11,9 @@ import { BsSql } from "@/libs/bs-sql";
 import { Table } from "@douyinfe/semi-ui";
 import { useHotkeys } from "react-hotkeys-hook";
 import { ComposerProps } from "@chatui/core/lib/components/Composer";
+import TableView from "@/components/TableView";
 
-const bsSdk = new BsSdk({});
+const bsSdk = new BsSdk({ onSelectionChange: true });
 const bsSql = new BsSql(bsSdk);
 
 export default function Home() {
@@ -157,38 +158,12 @@ export default function Home() {
     const { type, content } = msg;
     if (type === "select") {
       return (
-        <Bubble type="text">
-          <div style={{ fontSize: "1.1rem", marginBottom: 10 }}>
-            {content.tableName}
-          </div>
-          <Table
-            columns={content.columns}
-            dataSource={content.result}
-            pagination={{
-              pageSize: 10,
-            }}
-            resizable
-            bordered
-            // onRow={(row) => {
-            //   return {
-            //     onClick: async (e) => {
-            //       if (row?._id) {
-            //         console.log("table", content.table, row);
-            //         const table = await bsSdk.base.getTableById(
-            //           content.table.id
-            //         );
-            //         const recordShareLink = await table.getRecordShareLink(
-            //           row._id
-            //         );
-            //         console.log({ recordShareLink });
-            //       }
-            //     },
-            //   };
-            // }}
-          />
+        <Bubble type="text" style={{ width: "100%", overflow: "hidden" }}>
+          <TableView content={content} bsSdk={bsSdk}></TableView>
         </Bubble>
       );
     }
+
     return <Bubble content={content} />;
   }
 
@@ -273,9 +248,10 @@ async function select(sql: string) {
         resize: true,
       };
     });
+  const [selectTables] = await bsSql.emSelectTables.wait();
   return {
-    tableName: await tableListCtx.tableList[0].getName(),
-    table: tableListCtx.tableList[0],
+    tableName: await selectTables[0].getName(),
+    table: selectTables[0],
     columns,
     result,
   };
