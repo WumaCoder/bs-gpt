@@ -203,7 +203,7 @@ export default function Home() {
           );
         }
       } else if (e.key === "Enter") {
-        historyIndex.current = history.current.length - 1;
+        historyIndex.current = history.current.length;
       }
     };
     target.addEventListener("keydown", fn);
