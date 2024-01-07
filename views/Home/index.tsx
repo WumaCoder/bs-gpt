@@ -134,7 +134,7 @@ export default function Home() {
               "Content-Type": "application/json", // 设置请求头
             },
             body: JSON.stringify({
-              token: "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",
+              token: await bsSdk.storage.get("token"),
               message: val,
               tables: [table],
               responseType: "stream",
