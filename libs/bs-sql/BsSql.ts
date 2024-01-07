@@ -14,6 +14,7 @@ export type TableListCtx = {
 
 export class BsSql {
   public emFetchTableList = new Emitter<(data: TableListCtx) => any>();
+  public emFetchTableListFields = new Emitter<(data: any) => any>();
 
   constructor(private sdk: BsSdk) {
     this.fetchTables();
@@ -64,7 +65,11 @@ export class BsSql {
     return selectTablesId;
   }
   async query(sql: string) {
+    const activeId = (await this.sdk.getActiveTable()).id;
     const [tableListCtx] = await this.emFetchTableList.wait();
+    sql = sql.replace(/FROM\s+(\?)\s?/gim, `FROM ${activeId} `);
+    console.log("1sql:", sql);
+
     sql =
       replaceFieldNames(sql, {}, mapToObj(tableListCtx.tableNameMapId)) + "";
     console.log("sql:", sql);
@@ -79,6 +84,13 @@ export class BsSql {
 
     const transFields: any = {};
 
+    const tableMapFields = new Map<
+      string,
+      {
+        fieldsMapName: any;
+        fieldsMapId: any;
+      }
+    >();
     const tables = (alasql as any).tables;
     await Promise.all(
       selectTablesId.map(async (id) => {
@@ -90,10 +102,14 @@ export class BsSql {
 
         transFields[id] = t.fieldsMapName;
 
+        tableMapFields.set(id, t);
+
         console.log("selectTables:", table, records, data);
         tables[id] = { data };
       })
     );
+
+    this.emFetchTableListFields.emitLifeCycle(tableMapFields);
 
     sql = replaceFieldNames(sql, transFields, {}, ["_id"]) + "";
 
