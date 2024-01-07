@@ -1,0 +1,104 @@
+import { ITable } from "@lark-base-open/js-sdk";
+import { BsSdk } from "../bs-sdk/BsSdk";
+import { Emitter } from "../bs-sdk/Emitter";
+import alasql from "alasql";
+import { transFieldsMap } from "../bs-sdk/shared";
+import { mapToObj, replaceFieldNames } from "./shared";
+
+export type TableListCtx = {
+  tableMap: Map<string, ITable>;
+  tableIdMapName: Map<string, string>;
+  tableNameMapId: Map<string, string>;
+  tableList: ITable[];
+};
+
+export class BsSql {
+  public emFetchTableList = new Emitter<(data: TableListCtx) => any>();
+
+  constructor(private sdk: BsSdk) {
+    this.fetchTables();
+  }
+
+  async fetchTables() {
+    const tableMap = new Map<string, ITable>();
+    const tableNameMapId = new Map<string, string>();
+    const tableIdMapName = new Map<string, string>();
+    const tableList = await this.sdk.getTableList();
+
+    tableList.map((item) => tableMap.set(item.id, item));
+
+    const nameMapIds: { name: string; id: string }[] = [];
+    await Promise.all(
+      tableList.map(async (item) => {
+        const name = await item.getName();
+        nameMapIds.push({
+          name,
+          id: item.id,
+        });
+      })
+    );
+
+    // 按名字从长到短排序
+    nameMapIds
+      .sort((a, b) => b.name.length - a.name.length)
+      .forEach((item) => {
+        tableNameMapId.set(item.name, item.id);
+        tableIdMapName.set(item.id, item.name);
+      });
+
+    this.emFetchTableList.emitLifeCycle({
+      tableMap,
+      tableIdMapName,
+      tableNameMapId,
+      tableList,
+    });
+  }
+
+  extractName(sql: string, ids: string[]) {
+    const selectTablesId: string[] = [];
+    ids.forEach((id) => {
+      if (sql.includes(id)) {
+        selectTablesId.push(id);
+      }
+    });
+    return selectTablesId;
+  }
+  async query(sql: string) {
+    const [tableListCtx] = await this.emFetchTableList.wait();
+    sql =
+      replaceFieldNames(sql, {}, mapToObj(tableListCtx.tableNameMapId)) + "";
+    console.log("sql:", sql);
+    const selectTablesId: string[] = this.extractName(
+      sql,
+      Array.from(tableListCtx.tableNameMapId.values())
+    );
+
+    console.log("tableListCtx:", tableListCtx);
+
+    console.log("selectTablesId:", selectTablesId);
+
+    const transFields: any = {};
+
+    const tables = (alasql as any).tables;
+    await Promise.all(
+      selectTablesId.map(async (id) => {
+        const table = tableListCtx.tableMap.get(id) as ITable;
+        const records = await this.sdk.getRecordList(table);
+        const fields = await table.getFieldMetaList();
+        const data = await this.sdk.getDisplayRecordList(table, fields);
+        const t = transFieldsMap(fields);
+
+        transFields[id] = t.fieldsMapName;
+
+        console.log("selectTables:", table, records, data);
+        tables[id] = { data };
+      })
+    );
+
+    sql = replaceFieldNames(sql, transFields, {}, ["_id"]) + "";
+
+    console.log("res:", sql, transFields);
+
+    return alasql(sql);
+  }
+}
