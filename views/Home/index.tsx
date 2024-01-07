@@ -169,6 +169,22 @@ export default function Home() {
             }}
             resizable
             bordered
+            // onRow={(row) => {
+            //   return {
+            //     onClick: async (e) => {
+            //       if (row?._id) {
+            //         console.log("table", content.table, row);
+            //         const table = await bsSdk.base.getTableById(
+            //           content.table.id
+            //         );
+            //         const recordShareLink = await table.getRecordShareLink(
+            //           row._id
+            //         );
+            //         console.log({ recordShareLink });
+            //       }
+            //     },
+            //   };
+            // }}
           />
         </Bubble>
       );
@@ -259,6 +275,7 @@ async function select(sql: string) {
     });
   return {
     tableName: await tableListCtx.tableList[0].getName(),
+    table: tableListCtx.tableList[0],
     columns,
     result,
   };
