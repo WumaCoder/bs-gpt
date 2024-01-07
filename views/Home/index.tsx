@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Chat, {
   Bubble,
   MessageProps,
@@ -9,12 +9,17 @@ import "@chatui/core/dist/index.css";
 import { BsSdk } from "@/libs/bs-sdk/BsSdk";
 import { BsSql } from "@/libs/bs-sql";
 import { Table } from "@douyinfe/semi-ui";
+import { useHotkeys } from "react-hotkeys-hook";
+import { ComposerProps } from "@chatui/core/lib/components/Composer";
 
 const bsSdk = new BsSdk({});
 const bsSql = new BsSql(bsSdk);
 
 export default function Home() {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputRef, setInputRef] = useState<HTMLInputElement>();
+  const history = useRef<string[]>([]);
+  const composerRef = useRef<any>();
+  const historyIndex = useRef(-1);
   const [quickReplies] = useState<QuickReplyItemProps[]>([
     {
       name: "查询当前表",
@@ -38,6 +43,16 @@ export default function Home() {
   const { messages, appendMsg, setTyping, updateMsg, deleteMsg, resetList } =
     useMessages([]);
 
+  function addHistory(str: string) {
+    if (history.current.length > 20) {
+      history.current.shift();
+    }
+    if (str === history.current[history.current.length - 1]) {
+      return;
+    }
+    history.current.push(str);
+  }
+
   const sendFn = (type: string, val: any, pos: "left" | "right") => {
     const _id = geneId();
     appendMsg({
@@ -57,6 +72,7 @@ export default function Home() {
     if (type === "text" && val.trim()) {
       setTyping(true);
       userSend("text", val);
+      addHistory(val);
 
       const [cmd, ...args] = parseStringCmd(val);
 
@@ -135,6 +151,8 @@ export default function Home() {
     });
   }, []);
 
+  // useHotkeys("up", () => botSend("text", "f"), []);
+
   function renderMessageContent(msg: MessageProps) {
     const { type, content } = msg;
     if (type === "select") {
@@ -162,6 +180,40 @@ export default function Home() {
     handleSend("text", e.code);
   }
 
+  useEffect(() => {
+    const target = inputRef;
+    if (!target) return;
+    const fn = (e: any) => {
+      if (e.key === "ArrowUp") {
+        if (historyIndex.current <= history.current.length) {
+          composerRef.current.setText(history.current[historyIndex.current]);
+          setTimeout(() => {
+            // 光标移动到最后
+            const len = history.current[historyIndex.current].length;
+            target.setSelectionRange(len, len);
+          });
+          historyIndex.current--;
+          historyIndex.current = Math.max(historyIndex.current, 0);
+        }
+      } else if (e.key === "ArrowDown") {
+        if (historyIndex.current >= 0) {
+          composerRef.current.setText(history.current[historyIndex.current]);
+          historyIndex.current++;
+          historyIndex.current = Math.min(
+            historyIndex.current,
+            history.current.length - 1
+          );
+        }
+      } else if (e.key === "Enter") {
+        historyIndex.current = history.current.length - 1;
+      }
+    };
+    target.addEventListener("keydown", fn);
+    return () => {
+      target.removeEventListener("keydown", fn);
+    };
+  }, [inputRef]);
+
   return (
     <Chat
       navbar={{ title: "GPT 查询" }}
@@ -170,6 +222,11 @@ export default function Home() {
       onSend={handleSend}
       quickReplies={quickReplies}
       onQuickReplyClick={handleQuickReplyClick}
+      composerRef={composerRef}
+      onInputFocus={(e) => {
+        historyIndex.current = history.current.length - 1;
+        setInputRef(e.target as any);
+      }}
     />
   );
 }
