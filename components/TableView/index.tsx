@@ -2,8 +2,10 @@ import { copyTextToClipboard2 } from "@/libs/helper/tools";
 import { IconChevronLeft, IconCopy, IconExpand } from "@douyinfe/semi-icons";
 import { Button, Table, Toast } from "@douyinfe/semi-ui";
 import { MutableRefObject, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function TableView(props: any) {
+  const [t, i18n] = useTranslation();
   const content = props.content;
   const bsSdk = props.bsSdk;
   const [showDetail, setShowDetail] = useState("");
@@ -44,7 +46,7 @@ export default function TableView(props: any) {
               style={{ float: "right" }}
               onClick={() => {
                 copyTextToClipboard2(showDetail);
-                Toast.success("复制成功");
+                Toast.success(t("fu-zhi-cheng-gong"));
               }}
             />
           </div>

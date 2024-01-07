@@ -12,11 +12,14 @@ import { Table } from "@douyinfe/semi-ui";
 import { useHotkeys } from "react-hotkeys-hook";
 import { ComposerProps } from "@chatui/core/lib/components/Composer";
 import TableView from "@/components/TableView";
+import { useTranslation } from "react-i18next";
 
 const bsSdk = new BsSdk({ onSelectionChange: true });
 const bsSql = new BsSql(bsSdk);
 
 export default function Home() {
+  const [t, i18n] = useTranslation();
+
   const [inputRef, setInputRef] = useState<HTMLInputElement>();
   const history = useRef<string[]>([]);
   const composerRef = useRef<any>();
@@ -150,6 +153,10 @@ export default function Home() {
         botSend("text", "请配置 openai token 进行使用.\n语法: \ntoken 密钥");
       }
     });
+    async () => {
+      const lang = await bsSdk.bitable.bridge.getLanguage();
+      i18n.changeLanguage(lang.includes("zh") ? "zh" : "en");
+    };
   }, []);
 
   // useHotkeys("up", () => botSend("text", "f"), []);
