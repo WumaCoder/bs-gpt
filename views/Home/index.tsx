@@ -85,7 +85,9 @@ export default function Home() {
       userSend("text", val);
       addHistory(val);
 
-      const [cmd, ...args] = parseStringCmd(val);
+      const [cmdStr, ...args] = parseStringCmd(val);
+      const cmd = cmdStr.toLocaleLowerCase();
+      console.log(cmd, args);
 
       switch (cmd) {
         case "token":
@@ -129,8 +131,15 @@ export default function Home() {
             },
           ]);
           break;
-        default:
-          const table = await bsSql.structure(await bsSdk.getActiveTable());
+        default: {
+          const table = await bsSdk.getActiveTable();
+          const tableStruct = await bsSql.structure(table);
+          const tableList = (await bsSdk.getTableList()).filter(
+            (item) => item.id !== table.id
+          );
+          const tableStructs = await Promise.all(
+            tableList.map((item) => bsSql.structure(item))
+          );
 
           fetch("/api/ai", {
             method: "POST", // 指定请求方法为 POST
@@ -140,7 +149,7 @@ export default function Home() {
             body: JSON.stringify({
               token: await bsSdk.storage.get("token"),
               message: val,
-              tables: [table],
+              tables: [tableStruct, ...tableStructs],
               responseType: "stream",
             }), // 将 JavaScript 对象转换为 JSON 字符串
           })
@@ -183,6 +192,7 @@ export default function Home() {
               console.error("Fetch error:", err);
             });
           break;
+        }
       }
 
       // setTimeout(() => {
