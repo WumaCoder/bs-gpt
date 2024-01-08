@@ -14,9 +14,8 @@ export default async function handler(
 ) {
   if (req.method !== "POST") return;
   const body = req.body;
-  console.log(JSON.stringify(body));
   const token = body.token;
-  const baseURL = body.baseURL || "https://api.openai.com/v1"; //"https://api.op-enai.com/v1"
+  const baseURL = body.baseURL || "https://api.op-enai.com/v1";
   const tables = body.tables;
   const message = body.message;
 
@@ -32,7 +31,6 @@ export default async function handler(
   });
 
   for await (const chunk of stream) {
-    console.log(chunk);
     res.write(chunk.choices[0]?.delta?.content || "");
   }
   res.end();

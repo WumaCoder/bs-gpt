@@ -105,6 +105,10 @@ export default function Home() {
           });
           break;
         case "table":
+          const tableStruct = await bsSql.structure(
+            await bsSdk.getActiveTable()
+          );
+          botSend("text", tableStruct);
           break;
         case "help":
           botSend(

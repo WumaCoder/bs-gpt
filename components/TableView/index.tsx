@@ -14,7 +14,7 @@ export default function TableView(props: any) {
   const height =
     (wrapRef.current?.clientHeight ?? 0) < 400
       ? 500
-      : wrapRef.current?.clientHeight;
+      : wrapRef.current?.clientHeight ?? 0;
 
   return (
     <>
@@ -57,7 +57,7 @@ export default function TableView(props: any) {
                 border: 0,
                 padding: 0,
                 margin: 0,
-                height,
+                height: height + 100,
                 width: "100%",
                 marginTop: "-130px",
               }}
