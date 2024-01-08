@@ -1,11 +1,26 @@
 export default (tables: string[], message: string) => {
-  return `
-这是我的表结构:
+  const current = tables.shift();
+  return `Below is the current database table structure. I need you to write an SQL statement to query the following requirements. No need to return any other explanatory content.
+
+Requirements:
+
+- When using AS for aliases, add a backtick (\`).
+- Ensure the correctness of the SQL.
+
+
+Current:
+\`\`\`sql
+${current}
+\`\`\`
+
+Other:
 \`\`\`sql
 ${tables.join("\n")}
 \`\`\`
-下面我将会让你生成sql，请按照下面的需求生成一条sql，不需要其他废话，注意如何as别名的时候需要加\`号。
 
-需求：
-${message}`;
+
+Statement:
+
+${message}
+`;
 };
