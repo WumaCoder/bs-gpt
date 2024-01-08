@@ -16,32 +16,24 @@ export default async function handler(
   const body = req.body;
   console.log(JSON.stringify(body));
   const token = body.token;
+  const baseURL = body.baseURL || "https://api.openai.com/v1"; //"https://api.op-enai.com/v1"
   const tables = body.tables;
   const message = body.message;
 
-  const openai = connectOpenai(token);
+  const openai = new OpenAI({
+    apiKey: token, // This is the default and can be omitted
+    baseURL: baseURL,
+  });
 
   const stream = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [{ role: "user", content: sql(tables, message) }],
     stream: true,
   });
-  console.log("获取流", stream);
 
   for await (const chunk of stream) {
     console.log(chunk);
     res.write(chunk.choices[0]?.delta?.content || "");
   }
   res.end();
-}
-
-const map: any = {};
-function connectOpenai(token: string): OpenAI {
-  if (map[token]) return map[token];
-  const openai = new OpenAI({
-    apiKey: token, // This is the default and can be omitted
-    baseURL: "https://api.op-enai.com/v1",
-  });
-  map[token] = openai;
-  return openai;
 }
