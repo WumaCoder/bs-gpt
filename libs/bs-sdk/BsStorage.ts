@@ -1,13 +1,27 @@
 import { FieldType, ITextField } from "@lark-base-open/js-sdk";
 import { BsSdk } from "./BsSdk";
 
-export class BsStorage {
+export abstract class BsStorageBase {
   cache: any = {};
-  constructor(
-    private bsSdk: BsSdk,
-    private storageKey: string,
-    private initData: any = {}
-  ) {}
+  protected bsSdk!: BsSdk;
+  protected storageKey!: string;
+  protected initData: any = {};
+
+  load(bsSdk: BsSdk, storageKey: string, initData: any = {}) {
+    this.bsSdk = bsSdk;
+    this.storageKey = storageKey;
+    this.initData = initData;
+  }
+
+  abstract get<T>(key: string, defaultValue?: T): Promise<Awaited<T>>;
+
+  abstract set(key: string, data: any): Promise<boolean>;
+
+  abstract delete(key: string): Promise<boolean>;
+}
+
+export class BsTableStorage extends BsStorageBase {
+  cache: any = {};
 
   async init() {
     try {
@@ -82,6 +96,35 @@ export class BsStorage {
     delete obj.data[key];
     this.cache[key] = undefined;
     await cell.setValue(JSON.stringify(obj));
+    return true;
+  }
+}
+
+export class BsSdkStorage extends BsStorageBase {
+  cache: any = {};
+
+  async get<T>(key: string, defaultValue?: T): Promise<Awaited<T>> {
+    // if (this.cache[key]) {
+    //   return this.cache[key] ?? defaultValue;
+    // }
+    const storage = (await this.bsSdk.bitable.bridge.getData()) as any;
+    // this.cache = data;
+    return storage?.[key] ?? defaultValue;
+  }
+
+  async set(key: string, data: any) {
+    let storage = (await this.bsSdk.bitable.bridge.getData()) as any;
+    storage = Object.assign({}, storage, { [key]: data });
+    await this.bsSdk.bitable.bridge.setData(storage);
+    return true;
+  }
+
+  async delete(key: string) {
+    const storage = (await this.bsSdk.bitable.bridge.getData()) as any;
+    if (!storage) return true;
+    if (!storage[key]) return true;
+    delete storage[key];
+    await this.bsSdk.bitable.bridge.setData(storage);
     return true;
   }
 }

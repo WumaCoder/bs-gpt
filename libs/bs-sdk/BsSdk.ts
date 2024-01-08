@@ -12,7 +12,7 @@ import {
 import { format } from "date-fns";
 import { Emitter } from "./Emitter";
 import { transDisplayRecord } from "./shared";
-import { BsStorage } from "./BsStorage";
+import { BsSdkStorage, BsTableStorage } from "./BsStorage";
 
 export type SelectionChangeEmitter = (event: IEventCbCtx<Selection>) => any;
 export type InitEmitter = (sdk: BsSdk) => any;
@@ -28,7 +28,7 @@ export class BsSdk {
   public storageKey = "storage";
   // public readonly initEmitter = new Emitter<InitEmitter>();
   public readonly emSelectionChange = new Emitter<SelectionChangeEmitter>();
-  public readonly storage = new BsStorage(this, this.storageKey, {});
+  public readonly storage = new BsSdkStorage();
 
   constructor({
     onSelectionChange = false,
@@ -45,6 +45,7 @@ export class BsSdk {
         this.emSelectionChange.emitSync({ data: selection });
       });
     }
+    this.storage.load(this, this.storageKey);
   }
 
   async getRecordIds(table?: ITable) {
